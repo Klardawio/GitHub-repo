@@ -7,4 +7,4 @@ FROM attempt
     INNER JOIN subject USING(subject_id)
 GROUP BY 2, 1
 HAVING count(date_attempt) > 1
-ORDER BY 3
+ORDER BY 3;
