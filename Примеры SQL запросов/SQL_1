@@ -8,3 +8,5 @@ FROM attempt
 GROUP BY 2, 1
 HAVING count(date_attempt) > 1
 ORDER BY 3;
+
+![asd](https://avatars.mds.yandex.net/get-pdb/4080406/cbf1307d-ead1-4128-98d9-91a8a18ea478/s1200)
