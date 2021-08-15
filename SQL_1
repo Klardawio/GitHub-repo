@@ -1,0 +1,10 @@
+SELECT 
+  name_student, 
+  name_subject, 
+  DATEDIFF(max(date_attempt), min(date_attempt)) Интервал
+FROM attempt 
+    INNER JOIN student USING(student_id)
+    INNER JOIN subject USING(subject_id)
+GROUP BY 2, 1
+HAVING count(date_attempt) > 1
+ORDER BY 3
