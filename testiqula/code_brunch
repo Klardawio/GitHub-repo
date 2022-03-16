@@ -1,0 +1,326 @@
+import pygame
+import random
+import numpy as np
+from os import path
+
+'''
+mines
+'''
+
+img_dir = path.join(path.dirname(__file__), 'img')
+
+
+WIDTH = 1000  # ширина игрового окна
+HEIGHT = 500  # высота игрового окна
+FPS = 60  # частота кадров в секунду
+
+# Цвета (R, G, B)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+myBLUE = (25, 25, 100)
+lightIRIS = (100, 100, 200)
+
+# Создаем игру и окно __________________________________________________________________________________________________
+pygame.init()
+# pygame.mixer.init()  # для звука
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Testiqula")
+clock = pygame.time.Clock()
+
+
+########################################################################################################################
+# Спрайты ______________________________________________________________________________________________________________
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((50, 50))
+        self.image.fill(myBLUE)
+        self.rect = self.image.get_rect()  # получаем координаты
+        self.rect.center = (WIDTH / 2, HEIGHT / 2)
+        self.speed = 2
+        self.burst = 1
+        self.speedx = 0
+        self.speedy = 0
+        self.life = 3
+        self.cd = 500
+        self.shoot_tick = 0
+        self.curr_tick = 0
+
+    def shoot(self):
+        bullet = Bullet(self.rect.center)
+        all_sprites.add(bullet)
+        bullets.add(bullet)
+
+    def update(self):
+        self.burst = 1
+        self.speedx = 0
+        self.speedy = 0
+        keystate = pygame.key.get_pressed()
+        mousestate = pygame.mouse.get_pressed()
+        if keystate[pygame.K_a]:
+            self.speedx = -self.speed
+        if keystate[pygame.K_d]:
+            self.speedx = self.speed
+        if keystate[pygame.K_w]:
+            self.speedy = -self.speed
+        if keystate[pygame.K_s]:
+            self.speedy = self.speed
+        if keystate[pygame.K_LSHIFT]:
+            self.burst = 3
+        self.rect.x += self.speedx * self.burst
+        self.rect.y += self.speedy * self.burst
+
+        if mousestate[0]:
+            self.curr_tick = pygame.time.get_ticks()
+            if self.curr_tick - self.shoot_tick > self.cd:
+                player.shoot()
+                self.shoot_tick = pygame.time.get_ticks()
+
+
+        # slowmo
+        if mousestate[1]:
+            pygame.time.wait(40)
+
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
+        if self.rect.left < 0:
+            self.rect.left = 0
+
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
+        if self.rect.top < 0:
+            self.rect.top = 0
+
+        # player life_img
+        if player.life == 3:
+            self.image = player_imgs[0]
+        elif player.life == 2:
+            self.image = player_imgs[1]
+        elif player.life == 1:
+            self.image = player_imgs[-1]
+
+
+class Mob(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = mob_zombi_img
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
+        self.speedy = random.randrange(1, 3)
+        self.speedx = random.randrange(-3, 3)
+
+    def update(self):
+        self.rect.y += self.speedy
+        self.rect.x += self.speedx
+        if self.rect.top > HEIGHT + 10 or self.rect.left < -25 or self.rect.right > WIDTH + 20:
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.speedy = random.randrange(1, 3)
+            self.speedx = random.randrange(-3, 3)
+
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, xy):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = buckshot_img
+        self.image.set_colorkey(BLACK)
+        # self.image.fill(YELLOW)
+        self.rect = self.image.get_rect()
+        self.rect.center = xy
+        # self.rect.centerx = x
+        self.speed = 10
+
+
+    def update(self):
+        mouse_pos = pygame.math.Vector2(pygame.mouse.get_pos())
+        bullet_pos = pygame.math.Vector2(self.rect.center)
+        if mouse_pos != bullet_pos:
+            v = (mouse_pos-bullet_pos).normalize() * self.speed
+            self.rect.center += v
+        # start = self.rect
+        # distance = (mouse[0] - start[0], mouse[1] - start[1])
+        # # position = pygame.math.Vector2(start)
+        # speed = distance.normalize() * self.speed
+        # self.rect += speed
+        # # self.rect.y += self.speedy
+        # self.rect.x += self.speed
+        # self.rect.y += self.speed
+        # убить, если он заходит за верхнюю часть экрана
+        if self.rect.bottom < 0:
+            self.kill()
+
+
+# class Life(pygame.sprite.Sprite):
+#     def __init__(self):
+#         pygame.sprite.Sprite.__init__(self)
+#         self.image = life_imgs[-1]
+#         self.image.set_colorkey(BLACK)
+#         self.rect = self.image.get_rect()  # получаем координаты
+#         self.rect.center = (player.rect.centerx, player.rect.centery)
+#     def update(self):
+#         self.rect.center = player.rect.center
+#         if player.life == 3:
+#             self.image = life_imgs[-1]
+#             self.image.set_colorkey(BLACK)
+#         elif player.life == 2:
+#             self.image = life_imgs[1]
+#             self.image.set_colorkey(BLACK)
+#         elif player.life == 1:
+#             self.image = life_imgs[0]
+#             self.image.set_colorkey(BLACK)
+
+
+class Button_start(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = button_start_img
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (0, 0)
+
+
+# elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+########################################################################################################################
+#  самодвижение покуругу _______________________________________________________________________________________________
+# if self.rect.right != WIDTH and (self.rect.left != 0 or self.rect.left == 0 and self.rect.bottom == HEIGHT) and self.rect.top != 0:
+#     self.rect.x += move
+# if self.rect.right == WIDTH and self.rect.top != 0:
+#     self.rect.y += -move
+# if self.rect.left != 0 and self.rect.top == 0:
+#     self.rect.x += -move
+# if self.rect.left == 0 and self.rect.bottom < HEIGHT:
+#     self.rect.y += move
+########################################################################################################################
+# Загрузка всей игровой графики
+# background = pygame.image.load(path.join('img', 'back_test.png')).convert()
+# background_rect = background.get_rect()
+player_img_1 = pygame.image.load(path.join('img', 'player_img_1.png')).convert()
+player_img_2 = pygame.image.load(path.join('img', 'player_img_2.png')).convert()
+player_img_3 = pygame.image.load(path.join('img', 'player_img_3.png')).convert()
+player_imgs = [player_img_1, player_img_2, player_img_3]
+
+mob_zombi_img = pygame.image.load(path.join('img', 'Mob_zombi.png')).convert()
+
+bullet_img = pygame.image.load(path.join('img', 'ammo_bullet.png')).convert()
+buckshot_img = pygame.image.load(path.join('img', 'ammo_buсkshot.png')).convert()
+
+life_img_1 = pygame.image.load(path.join('img', 'life_img_1.png')).convert()
+life_img_2 = pygame.image.load(path.join('img', 'life_img_2.png')).convert()
+life_img_3 = pygame.image.load(path.join('img', 'life_img_3.png')).convert()
+life_imgs = [life_img_1, life_img_2, life_img_3]
+
+button_start_img = pygame.image.load(path.join('img', 'button_start.png')).convert()
+# main_battle_cursor_img = pygame.cursors.load_xbm(path.join('img', 'main_battle_cursor_img.bmp'))
+#main_battle_cursor_img = pygame.cursors.load_xbm(r'C:\Users\a.kataev\PycharmProjects\pythonProject1\pets\testiqula\img\main_battle_cursor.bmp',
+#                                                 r'C:\Users\a.kataev\PycharmProjects\pythonProject1\pets\testiqula\img\main_battle_cursor - Copy.bmp')
+
+########################################################################################################################
+
+all_sprites = pygame.sprite.Group()  # Создаём хранилище спрайтов для игры
+mobs = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+player = Player()
+# life = Life()
+b_start = Button_start()
+all_sprites.add(player)
+all_sprites.add(b_start)
+# all_sprites.add(life)
+
+
+for i in range(8):
+    m = Mob()
+    all_sprites.add(m)
+    mobs.add(m)
+
+# Обновление
+all_sprites.update()
+
+# Цикл игры
+running = True
+
+while running:
+    pygame.mouse.set_cursor(pygame.cursors.diamond)
+
+    clock.tick(FPS)  # держим цикл на правильной скорости
+    # shoot_time = pygame.time.Clock()
+    # Рендеринг 'задняя доска'
+    screen.fill(BLACK)
+    # screen.blit(background, background_rect)
+
+    all_sprites.update()  # Обновление спрайтов
+    all_sprites.draw(screen)  # Отрисовка спрайтов
+
+    pygame.display.flip()  # после отрисовки всего, переворачиваем экран
+
+    keys = pygame.key.get_pressed()
+
+    for event in pygame.event.get():
+        # проверить закрытие окна
+        if event.type == pygame.QUIT:
+            running = False
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                player.shoot()
+        keys = pygame.key.get_pressed()
+
+    ########################################################################################################################
+    # движение через ивенты ________________________________________________________________________________________________
+    # if event.type == pygame.KEYDOWN:
+    #     player.speedx += (keys[pygame.K_d] - keys[pygame.K_a]) * player.speed * (keys[pygame.K_LSHIFT] * player.burst + 1)
+    #     player.speedy += (keys[pygame.K_s] - keys[pygame.K_w]) * player.speed * (keys[pygame.K_LSHIFT] * player.burst + 1)
+
+    # if event.type == pygame.KEYDOWN:
+    #     if event.key == pygame.K_LSHIFT:
+    #         player.burst = 3
+    #
+    # if event.type == pygame.KEYDOWN:
+    #
+    #     if event.key == pygame.K_a:
+    #         player.speedx = -player.speed
+    #
+    #     if event.key == pygame.K_d:
+    #         player.speedx = player.speed
+    #
+    #     if event.key == pygame.K_w:
+    #         player.speedy = -player.speed
+    #
+    #     if event.key == pygame.K_s:
+    #         player.speedy = player.speed
+    #
+    #
+    # if event.type == pygame.KEYUP:
+    #     if event.key == pygame.K_a:
+    #         player.speedx = 0
+    #     if event.key == pygame.K_d:
+    #         player.speedx = 0
+    #     if event.key == pygame.K_w:
+    #         player.speedy = 0
+    #     if event.key == pygame.K_s:
+    #         player.speedy = 0
+    #     if event.key == pygame.K_LSHIFT:
+    #         player.burst = 1
+    ########################################################################################################################
+
+    # Проверка, не ударил ли моб игрока
+    hits = pygame.sprite.spritecollide(player, mobs, True)
+    if hits:
+        player.life -= 1
+        hits = []
+        if player.life == 0:
+            running = False
+
+    # Проверка, моб и пуля
+    hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
+    for hit in hits:
+        m = Mob()
+        all_sprites.add(m)
+        mobs.add(m)
+
+pygame.quit()
